@@ -54,7 +54,7 @@ def main():
     activa = True
     while activa:
         entrada = input(">>> ").strip()
-        if not entrada.startswith("!")
+        if not entrada.startswith("!"):
             print("Recuerda que los comandos deben comenzar con '!'.")
             continue
         cuerpo= entrada[1:].split(" ", 1)

@@ -1,42 +1,41 @@
 import discord
-from discord.ext import commands
 from tareas_agente import agregar_tarea, listar_tareas, eliminar_tarea
 
-intents = discord.Intents.default()
-intents.message_content = True
+def bienvenida():
+    return "¡Bienvenido al gestor de tareas! Usa !agregar, !listar o !eliminar para gestionar tus tareas."
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
-tareas = []
+def main():
+    bienvenida()
+    intents = discord.Intents.default()
+    intents.message_content = True
+    bot = discord.Client(intents=intents)
 
-@bot.event
-async def on_ready():
-    print(f"--- Agente Procesador de Tareas Online ---")
-    print(f"Conectado como: {bot.user.name}")
+    @bot.event
+    async def on_ready():
+        print(f'Bot conectado como {bot.user}')
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
+    @bot.event
+    async def on_message(message):
+        if message.author == bot.user:
+            return
 
-    if message.content.startswith("!"):
-        entrada = message.content.strip()
-        cuerpo = entrada[1:].split(" ", 1)
-        comando = cuerpo[0].lower()
-        argumento = cuerpo[1] if len(cuerpo) > 1 else ""
+        if message.content.startswith('!'):
+            comando = message.content[1:].split()[0].lower()
+            argumento = ' '.join(message.content.split()[1:])
 
-        if comando == "add":
-            respuesta = agregar_tarea(tareas, argumento)
+            if comando == "agregar":
+                respuesta = agregar_tarea(tareas, argumento)
+            elif comando == "listar":
+                respuesta = listar_tareas(tareas)
+            elif comando == "eliminar":
+                respuesta = eliminar_tarea(tareas, argumento)
+            else:
+                respuesta = "Comando no reconocido. Usa !agregar, !listar o !eliminar."
+
             await message.channel.send(respuesta)
-        elif comando == "list":
-            respuesta = listar_tareas(tareas)
-            await message.channel.send(respuesta)
-        elif comando == "remove":
-            respuesta = eliminar_tarea(tareas, argumento)
-            await message.channel.send(respuesta)
 
-    await bot.process_commands(message)
-
-TOKEN = "TU_TOKEN_DE_DISCORD_AQUI"
+TOKEN = "MTUxNjQzODk4NjEyODg4MzcyMg.GCCyfU.wVDjxpYrn37D3-Pm5QvH-I6huiu9hNt6WnsUjA"
 
 if __name__ == "__main__":
-    bot.run(TOKEN)
+    tareas = []
+    main()
