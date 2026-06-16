@@ -1,42 +1,86 @@
 import discord
+import os
+import re
 import datetime
-from procesador_comandos import mostrar_ayuda, procesar_comando_recordar, calcular_uptime, mostrar_ayuda
+from dotenv import load_dotenv
+from procesador_comandos import procesar_comando_recordar, calcular_uptime, mostrar_ayuda
 
-def bienvenida():
-    return "¡Bienvenido al agente procesador de comandos! Usa !saludo, !ayuda, !recordar [nombre] o !uptime para interactuar."
+ruta_script = os.path.dirname(os.path.abspath(__file__))
+ruta_env = os.path.join(ruta_script, '.env')
+load_dotenv(dotenv_path=ruta_env)
 
-def main():
-    intents = discord.Intents.default()
-    intents.message_content = True
-    bot = discord.Client(intents=intents)
+TOKEN = os.getenv('DISCORD_TOKEN')
+hora_inicio = datetime.datetime.now()
 
-    @bot.event
-    async def on_ready():
-        print(f'Bot conectado como {bot.user}')
+def mostrar_bienvenida():
+    return (
+        "📜 Bot de Procesamiento de Comandos (Modo Estructurado):\n"
+        "📜 Primeros pasos Agente Discord UX:\n"
+        "📜 Escriba !Exit para salir del Agente:\n"
+        "📜 Escriba !Inicio para mostrar esta bienvenida nuevamente.\n"
+        "📜 Comandos disponibles:\n"
+        "!saludo - Muestra un saludo de bot\n"
+        "!recordar [nombre] - Recuerda un nombre proporcionado\n"
+        "!uptime - Muestra el tiempo de actividad del bot\n"
+        "!ayuda - Muestra esta lista de comandos\n"
+    )
 
-    @bot.event
-    async def on_message(message):
-        if message.author == bot.user:
-            return
+def main(entrada):
+    PREFIJO = "!"
+    if not entrada.startswith(PREFIJO):
+        if entrada: 
+            print("Recuerda usar '!' para comandos.")
+            return "Recuerda usar '!' para comandos."
 
-        if message.content.startswith('!'):
-            comando = message.content[1:].split()[0].lower()
-            argumento = ' '.join(message.content.split()[1:])
+    cuerpo = entrada[len(PREFIJO):].split(maxsplit=1)
+    comando = cuerpo[0].lower()
+    argumento = cuerpo[1] if len(cuerpo) > 1 else ""
 
-            if comando == "saludo":
-                respuesta = f"¡Hola, {message.author.name}! Soy tu bot de Discord."
-            elif comando == "ayuda":
-                respuesta = mostrar_ayuda()
-            elif comando == "recordar":
-                respuesta = procesar_comando_recordar(argumento)
-            elif comando == "uptime":
-                respuesta = calcular_uptime(bot.start_time)
-            else:
-                respuesta = "Comando no reconocido. Escribe !ayuda para ver los comandos disponibles."
+    if comando == "exit":
+        print("Saliendo del gestor...")
+        return "Saliendo del gestor..."
+    elif comando == "inicio":
+        print(mostrar_bienvenida())
+        return mostrar_bienvenida()
+    elif comando == "saludo":
+        return "Hola, soy Discordbot, ¿en qué puedo ayudarte?"
+    elif comando == "ayuda":
+        return "".join(mostrar_ayuda())
+    elif comando == "recordar":
+        resultado = procesar_comando_recordar(argumento)
+        print(f"Resultado: {resultado}")
+        return resultado
+    elif comando == "uptime":
+        resultado = calcular_uptime(hora_inicio)
+        print(f"Resultado: {resultado}")
+        return resultado
+    else:
+        print(f" Error: Comando '!{comando}' no reconocido.")
+        return f" Error: Comando '!{comando}' no reconocido."
 
-            await message.channel.send(respuesta)
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
 
-TOKEN = ""
+@client.event
+async def on_ready():
+    print(f'Sincronizado como {client.user} (ID: {client.user.id})')
+    print('------')
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    print(f"Mensaje recibido de {message.author}: {message.content}")
+
+    if message.content.startswith('!'):
+        resultado = main(message.content)
+        print(f"Resultado del procesamiento: {resultado}")
+        await message.channel.send(f"**Bot Procesador:**\n{resultado}")
 
 if __name__ == "__main__":
-    main()
+    if TOKEN:
+        client.run(TOKEN)
+    else:
+        print(f"ERROR: No se encontró el TOKEN. Ruta buscada: {ruta_env}")
